@@ -1,4 +1,5 @@
-#Script to plot the summary figure (Figure 7)
+#Figure 7 summary figure at north
+
 rm(list=ls())
 
 library(ggplot2)
@@ -8,8 +9,8 @@ library(ggh4x)
 library(ggtext)
 
 
-# Create data frame
-#1: increase: abundance at north, -1: decrease, west: increase at north west, east: increase at north east
+# Table of results
+#1: abundance increase, -1 decrease. 
 df <- data.frame(
   Species = c("Red maple", "Yellow birch", "Sugar maple", "White cedar", "Red spruce", 
               "American beech", "Eastern white pine", "Eastern hemlock", "Black ash", 
@@ -34,12 +35,9 @@ group <- data.frame(variable=c("TAVE", "VPD", "Elevation", "Slope", "TWI",
                             "Soil", "Soil", "Soil", 
                             "Stand dynamic", "Stand dynamic"))
 
-# Transform the data frame for ggplot
 df_melt <- melt(df, id.vars = "Species") %>% 
   left_join(group)
   
-
-# Replace "east" and "west" 
 df_melt$value <- factor(df_melt$value, levels = c(-1, 0, 1, "east", "west"), labels = c(
   "Abundance covaries **negatively**", 
   "No correlation",
@@ -74,7 +72,7 @@ plot <- ggplot(df_melt, aes(x = interaction(variable, group), y = Species, fill 
                "**Negative** in West, **positive** in East",
                "**Positive** in West, **negative** in East")
   ) +
-  geom_text(aes(label = label), size = 8, color = "black") +
+  geom_text(aes(label = label), size = 8, color = "black") +  
   labs(x = "Variable",
        y = "Species",
        fill = NULL) +
@@ -84,34 +82,36 @@ plot <- ggplot(df_melt, aes(x = interaction(variable, group), y = Species, fill 
         axis.text=element_text(size=14),
         axis.title=element_text(size=16),
         legend.title = element_text(size = 16),
-        legend.text = element_markdown(size=14)) +            
+        legend.text = element_markdown(size=14)) +               
   guides(fill = guide_legend(title = "For northern populations", 
                              ncol = 1, override.aes = list(color = NA)))+
-  scale_x_discrete(guide = "axis_nested")  
+  scale_x_discrete(guide = "axis_nested") 
 
-#Add +, -, -/+ and +/- in legends with inkscape. 
-
-plot
-
-#as example sugar maple
-ers_shap <- readRDS("~/postdoc/habitat_caracterisation/article/figures/experiment/sugar_maple_CEC_shap.rds") + 
-  geom_hline(yintercept = 46.5, linewidth=1.5, linetype='dashed', col="red") +
+ers_shap <- readRDS("figures/sugar_maple_CEC_shap.rds") + 
   theme(axis.text=element_text(size=14),
         axis.title=element_text(size=16),
         legend.title = element_text(size = 14),
         legend.text = element_text(size=12))
 
-plot_ers <- ggarrange(plot, ers_shap, ncol=1, heights=c(0.7, 0.3), 
+bivariate_legend <- readRDS("figures/bivariate_legend.rds")
+
+blank <- ggplot() + theme_void()
+
+ers_shap_legend <- ggarrange(blank, ggarrange(ers_shap, bivariate_legend, 
+                                              ncol=2, nrow=1,
+                                              widths=c(3,1)), blank, 
+                             ncol=3, widths=c(1,5,1))
+
+plot_ers <- ggarrange(plot, ers_shap_legend, ncol=1, heights=c(0.7, 0.3), 
                       labels=c("A", "B"), 
                       label.x = c(0,0.2), label.y = c(1,1),
                       font.label = list(size = 16)) +
   bgcolor("white") + border("white")
 
-plot_ers
+
 
 ggsave(plot=plot_ers, filename="figures/summary.png",
        width=13, height=10, dpi =1000, units="in")
 
 ggsave(plot=plot_ers, filename="figures/summary.pdf",
        width=13, height=10)
-

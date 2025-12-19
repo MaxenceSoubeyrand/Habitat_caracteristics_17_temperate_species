@@ -1,4 +1,4 @@
-#Plot the variable importance of each species with R² (Figure 3)
+#Figure 3 showing R² and importance
 
 rm(list=ls())
 
@@ -9,7 +9,6 @@ theme_set(theme_bw())
 library(sf)
 library(ggh4x)
 
-#get results
 imp <- readRDS("results/res_model/all_importance.rds")
 R2 <- readRDS("results/res_model/all_R2.rds")
 
@@ -45,12 +44,14 @@ imp$variable <- factor(imp$variable  , levels = unique(imp$variable),
 
 imp$R2 <- ""
 
-group <- data.frame(variable=c("TAVE", "VPD", "elevation", "slope", "TWI", 
+group <- data.frame(variable=c("TAVE", "VPD", "spei_severe", "elevation", "slope", "TWI", 
                                "CEC", "clay", "pH",  "origin", "age", "R²"),
-                    group=c("Climate", "Climate", 
+                    group=c("Climate", "Climate", "Climate",
                             "Topography", "Topography", "Topography", 
                             "Soil", "Soil", "Soil", 
                             "Stand dynamics", "Stand dynamics", ""))
+
+
 
 R2_imp <- R2 %>% 
   mutate(R2=as.character(round(R2,2))) %>% 
@@ -58,7 +59,14 @@ R2_imp <- R2 %>%
   bind_rows(imp) %>% 
   left_join(group)
 
+R2_imp$variable[R2_imp$variable == "spei_severe"] <- "SPEI"
+
 R2_imp$group <- factor(R2_imp$group  , levels = c("", "Climate","Topography", "Soil", "Stand dynamics"))
+
+R2_imp$variable <- factor(R2_imp$variable  , levels = c("R²", "TAVE", "VPD", "SPEI", "elevation", "slope",
+                          "TWI", "CEC", "clay", "pH", "origin", "age"), 
+                       labels = c("R²", "TAVE", "VPD", "SPEI", "elevation", "slope",
+                                  "TWI", "CEC", "clay", "pH", "origin", "age"))
 
 all_imp_plot <- ggplot(R2_imp, aes(x=interaction(variable, group), y=species, fill=importance)) +
   geom_tile() +
@@ -81,9 +89,9 @@ all_imp_plot <- ggplot(R2_imp, aes(x=interaction(variable, group), y=species, fi
 
 ggsave(plot=all_imp_plot, 
        filename="figures/figure_importance.png", 
-       width=11, height=7, dpi =1000, units="in")
+       width=12, height=7, dpi =1000, units="in")
 
 ggsave(plot=all_imp_plot, 
        filename="figures/figure_importance.pdf", 
-       width=11, height=7)
+       width=12, height=7)
 
