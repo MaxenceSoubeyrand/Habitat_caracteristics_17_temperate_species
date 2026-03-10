@@ -1,7 +1,5 @@
 rm(list=ls())
 
-setwd("~/postdoc/habitat_caracterisation/article/figures/map")
-
 library(tidyverse)
 library(ggthemes)
 library(mapview)
@@ -23,20 +21,20 @@ temp_spe <- c("BOJ", "ERR", "ERS", "HEG", "PRU",
               "TIL", "FRN", "THO", "FRA", "OSV",
               "ORA","CET")
 
-#ouvrir domaine bioclimatique pour plot
-dom_bio <- st_read(dsn = "~/postdoc/data/carte_qc/dom_bio/dom_bio.shp",
+#opening domain biocliamtic available here
+#https://www.donneesquebec.ca/recherche/fr/dataset/systeme-hierarchique-de-classification-ecologique-du-territoire
+dom_bio <- st_read(dsn = "data/dom_bio/dom_bio.shp",
                    layer = "dom_bio")
 dom_bio_map <- subset(dom_bio, dom_bio$DOM_BIO %in% c("1", "2", "3","4", "5", "6"))
 
-ab_PE <- readRDS("~/postdoc/habitat_caracterisation/data_compilation/abundance_PE_clim.rds") %>% 
+#data available upon request maxence.soubeyrand@uqat.ca
+ab_PE <- readRDS("data/abundance_PE_clim.rds") %>% 
   filter(species %in% temp_spe) %>% 
   sf::st_as_sf(coords = c("longitude", "latitude"),
                crs = 4326) %>% 
   mutate(Site="PEP/PET") %>% 
   select(ID_PE) %>% 
   unique()
-
-min(ab_PE$latitude)
 
 lim_bio <- st_bbox(ab_PE)
 
@@ -81,7 +79,6 @@ countries <- data.frame(lat=c(51.66781288717857, 38.99658150626441),
 emprise <- ggplot(data=world) +
   geom_sf() +
   geom_text(data=countries, aes(x=long, y=lat, label=country), size=2.5)+
-  #???coord_sf(xlim = c(lim_bio[1,1], lim_bio[1,2]+lim_bio[1,2]/7), ylim = c(lim_bio[2,1], lim_bio[2,2]), expand = FALSE) +
   coord_sf(xlim = c(-99, -51), ylim = c(30, 62), expand = FALSE) +
   theme_void() +
   annotate("rect", xmin = lim_bio[1], xmax = lim_bio[3], ymin = lim_bio[2]-0.1, ymax = lim_bio[4]+0.6,
@@ -100,73 +97,8 @@ map <-
   draw_plot(emprise, x=0.83, y=0.71, width=.15, height=.15)
 
 
-png(filename="~/postdoc/habitat_caracterisation/article/figures/map/map.png", 
+png(filename="figures/map/map.png", 
     unit="in", height=7, width=7, res=1000)
 map
 dev.off()
 
-pdf(file="~/postdoc/habitat_caracterisation/article/figures/map/map.pdf")
-map
-dev.off()
-
-
-main <- ggplot(ab_PE)+ 
-  geom_sf(data = canada) +
-  geom_sf(data = world) +
-  geom_sf(data = dom_bio_map, aes(fill = DOM_BIO)) +
-  geom_sf(data = ab_PE, size = 0.02, alpha = 0.1) +
-  scale_fill_manual(
-    values = c("#FB65FF", "#C2BF84", "#FFCD5A", "#81ED66", "#63CAE9", "#B3CCFF"),
-    breaks = c("1", "2", "3", "4", "5", "6"),
-    labels = c(
-      "Erablière\nà caryer", 
-      "Erablière\nà tilleul", 
-      "Erablière\nà bouleau jaune", 
-      "Sapinière\nà bouleau jaune", 
-      "Sapinière\nà bouleau blanc", 
-      "Pessière\nà mousse"
-    )
-  ) +
-  labs(fill = "Domaine bioclimatique") +
-  coord_sf(
-    xlim = c(lim_bio[1], lim_bio[3]), 
-    ylim = c(lim_bio[2] - 0.1, lim_bio[4] + 0.6), 
-    expand = TRUE
-  ) +
-  theme(
-    panel.background = element_rect(fill = "dodgerblue3"),
-    panel.grid.major = element_blank(), 
-    panel.grid.minor = element_blank(),
-    axis.title.x = element_blank(),
-    axis.title.y = element_blank(),
-    axis.text = element_text(size = 14),
-    axis.title = element_text(size = 15),
-    legend.text = element_text(size = 14),
-    legend.title = element_text(size = 15),
-    legend.position = "bottom",
-    strip.text = element_text(size = 12),
-    plot.title = element_text(size = 16)
-  ) + 
-  guides(fill = guide_legend(nrow = 2, byrow = TRUE)) +
-  annotation_north_arrow(
-    location = "bl", 
-    which_north = "true", 
-    pad_x = unit(0.05, "in"), 
-    pad_y = unit(0.15, "in"),
-    style = north_arrow_fancy_orienteering
-  ) +
-  annotation_scale(
-    location = "bl", 
-    width_hint = 0.35, 
-    height = unit(0.1, "cm")
-  )
-
-map <-
-  ggdraw() +
-  draw_plot(main) +
-  draw_plot(emprise, x=0.83, y=0.71, width=.15, height=.15)
-
-png(filename="~/postdoc/habitat_caracterisation/article/figures/map/map_fr.png", 
-    unit="in", height=7, width=8, res=1000)
-map
-dev.off()
